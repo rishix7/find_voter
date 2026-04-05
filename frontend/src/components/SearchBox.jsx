@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+const VOTER_ID_LENGTH = 10;
+
 function SearchBox({ onSearch, loading, initialValue = "" }) {
   const [input, setInput] = useState(initialValue);
   const [error, setError] = useState("");
@@ -8,16 +10,24 @@ function SearchBox({ onSearch, loading, initialValue = "" }) {
     setInput(initialValue || "");
   }, [initialValue]);
 
+  const sanitizeVoterId = (value) => value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, VOTER_ID_LENGTH);
+
   const submit = (event) => {
     event.preventDefault();
-    const normalized = input.toUpperCase().trim();
+    const normalized = sanitizeVoterId(input);
 
     if (!normalized) {
       setError("Please enter voter number.");
       return;
     }
 
+    if (normalized.length !== VOTER_ID_LENGTH) {
+      setError(`Voter ID must be exactly ${VOTER_ID_LENGTH} characters.`);
+      return;
+    }
+
     setError("");
+    setInput(normalized);
     onSearch(normalized);
   };
 
@@ -27,10 +37,14 @@ function SearchBox({ onSearch, loading, initialValue = "" }) {
   };
 
   const handleChange = (event) => {
-    const value = event.target.value.toUpperCase();
+    const value = sanitizeVoterId(event.target.value);
     setInput(value);
 
-    if (value.trim()) {
+    if (value.length === VOTER_ID_LENGTH) {
+      setError("");
+    } else if (value.length > 0) {
+      setError(`Voter ID must be exactly ${VOTER_ID_LENGTH} characters.`);
+    } else {
       setError("");
     }
   };
@@ -43,7 +57,8 @@ function SearchBox({ onSearch, loading, initialValue = "" }) {
           className={`search-input ${error ? "search-input-error" : ""}`}
           value={input}
           onChange={handleChange}
-          placeholder="e.g. RRNXXXXXX5"
+          placeholder="e.g. RRN1106715"
+          maxLength={VOTER_ID_LENGTH}
           disabled={loading}
           aria-invalid={Boolean(error)}
           aria-describedby="voter-id-error"
@@ -59,7 +74,7 @@ function SearchBox({ onSearch, loading, initialValue = "" }) {
             X
           </button>
         )}
-        <button type="submit" className="search-btn" disabled={loading}>
+        <button type="submit" className="search-btn" disabled={loading || input.length !== VOTER_ID_LENGTH}>
           {loading ? <span className="spinner" aria-label="Loading" /> : "Search"}
         </button>
       </form>
