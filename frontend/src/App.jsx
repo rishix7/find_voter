@@ -4,29 +4,17 @@ import axios from "axios";
 import SearchBox from "./components/SearchBox";
 import ResultCard from "./components/ResultCard";
 import NotFound from "./components/NotFound";
-import RecentSearches from "./components/RecentSearches";
 
 const API_URL = import.meta.env.VITE_API_URL;
-const RECENT_KEY = "recentSearches";
 
 function App() {
   const [query, setQuery] = useState("");
   const [voter, setVoter] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [recentSearches, setRecentSearches] = useState([]);
   const [stats, setStats] = useState({ booth52: 0, booth53: 0, booth54: 0, total: 0 });
 
   useEffect(() => {
-    const saved = localStorage.getItem(RECENT_KEY);
-    if (saved) {
-      try {
-        setRecentSearches(JSON.parse(saved));
-      } catch {
-        setRecentSearches([]);
-      }
-    }
-
     const loadStats = async () => {
       try {
         const res = await axios.get(`${API_URL}/api/stats`);
@@ -38,14 +26,6 @@ function App() {
 
     loadStats();
   }, []);
-
-  const saveRecent = (id) => {
-    setRecentSearches((prev) => {
-      const next = [id, ...prev.filter((item) => item !== id)].slice(0, 5);
-      localStorage.setItem(RECENT_KEY, JSON.stringify(next));
-      return next;
-    });
-  };
 
   const handleSearch = async (voterId) => {
     const normalized = voterId.toUpperCase().trim();
@@ -61,7 +41,6 @@ function App() {
 
       if (res.data?.found) {
         setVoter(res.data.voter);
-        saveRecent(normalized);
       } else {
         setError("Voter not found");
       }
@@ -107,7 +86,6 @@ function App() {
 
         <div className="no-print">
           <SearchBox onSearch={handleSearch} loading={loading} initialValue={query} />
-          <RecentSearches searches={recentSearches} onSelect={handleSearch} />
         </div>
 
         {voter && <ResultCard voter={voter} />}
